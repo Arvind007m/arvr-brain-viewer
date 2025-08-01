@@ -16,11 +16,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="backend/static"), name="static")
 
-app.mount("/output", StaticFiles(directory="output"), name="output")
+app.mount("/output", StaticFiles(directory="backend/output"), name="output")
 
-app.mount("/input", StaticFiles(directory="input"), name="input")
+app.mount("/input", StaticFiles(directory="backend/input"), name="input")
 
 @app.get("/")
 def read_root():
@@ -44,11 +44,11 @@ def get_viewer_xtk():
 @app.post("/upload/")
 async def upload_mri(file: UploadFile = File(...)):
     try:
-        input_path = os.path.join("input", "uploaded.nii")
+        input_path = os.path.join("backend", "input", "uploaded.nii")
         with open(input_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        result = subprocess.run(["python", "run_pipeline.py"], capture_output=True, text=True)
+        result = subprocess.run(["python", "backend/run_pipeline.py"], capture_output=True, text=True, cwd="backend")
 
         if result.returncode != 0:
             return JSONResponse(status_code=500, content={"error": result.stderr})
