@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>3D Brain Anomaly Viewer</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="hero">
+    <img src="assets/brainimage.png" alt="3D Brain" class="brain-img" />
+    <h1>3D Brain Anomaly Detection</h1>
+    <p>Choose between immersive AR or VR medical training</p>
+  </header>
+
+  <main class="container">
+    <div class="card glass">
+      <h2>Upload MRI Scan (.nii)</h2>
+
+      <input type="file" id="mriUpload" accept=".nii" hidden />
+
+      <label for="mriUpload" class="upload-label">
+        <img src="assets/upload-icon.png" alt="Upload Icon" class="upload-img"/>
+        <p>Click to Upload</p>
+      </label>
+
+      <p id="fileName" class="file-name"></p>
+
+      <div class="mode-buttons">
+        <button onclick="showViewer('ar')">Launch AR View</button>
+        <button onclick="showViewer('vr')">Launch VR View</button>
+        <button onclick="showViewer('3d')">Launch 3D View</button>
+        <button onclick="showXTKViewer()">Analyze brain</button>
+      </div>
+    </div>
+
+    <div id="unityViewer" class="glass hidden">
+      <h2>3D / AR / VR Viewer</h2>
+      <iframe id="viewerFrame" src="" allow="camera *; microphone *; xr-spatial-tracking *;" loading="lazy"></iframe>
+      <button id="fullscreenBtn">Fullscreen</button>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

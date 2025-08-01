@@ -1,0 +1,220 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(to right, #1d2b64, #f8cdda);
+  color: white;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.hero {
+  text-align: center;
+  padding: 50px 20px 20px;
+}
+
+.hero h1 {
+  font-size: 2.8rem;
+  margin-top: 10px;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  margin-top: 10px;
+  opacity: 0.9;
+}
+
+.brain-img {
+  max-width: 160px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.container {
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  align-items: center;
+}
+
+.card {
+  width: 100%;
+  padding: 30px;
+  text-align: center;
+  border-radius: 20px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.2);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+h2 {
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+}
+
+.upload-label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  background-color: rgba(255,255,255,0.2);
+  padding: 15px 25px;
+  border-radius: 20px;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+}
+
+.upload-label:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+.upload-img {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 10px;
+}
+
+.file-name {
+  margin-top: 10px;
+  font-size: 0.95rem;
+  color: #fff;
+  opacity: 0.8;
+}
+
+.mode-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.mode-buttons button {
+  background: linear-gradient(135deg, #ff416c, #ff4b2b);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 30px;
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.mode-buttons button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+#unityViewer {
+  width: 100%;
+  text-align: center;
+  padding: 20px;
+}
+
+#viewerFrame {
+  width: 100%;
+  height: 500px;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+  margin-top: 20px;
+}
+
+/* ✅ 3D Canvas Style (for Three.js rendering) */
+#threeCanvas {
+  width: 100%;
+  height: 500px;
+  border-radius: 16px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+  margin-top: 20px;
+  display: block;
+  background-color: #000;
+}
+
+.hidden {
+  display: none;
+}
+
+@media screen and (max-width: 600px) {
+  .mode-buttons {
+    flex-direction: column;
+  }
+
+  .brain-img {
+    width: 120px;
+  }
+
+  .upload-img {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+/* ✅ Loading Overlay Styles */
+#loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 9999;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+.spinner {
+  border: 6px solid rgba(255, 255, 255, 0.3);
+  border-top: 6px solid #ffffff;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+#fullscreenBtn {
+  margin-top: 20px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #43cea2, #185a9d);
+  border: none;
+  border-radius: 30px;
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+#fullscreenBtn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}

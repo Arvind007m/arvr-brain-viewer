@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Analyze Brain Scan</title>
+  <!-- XTK Library -->
+  <script src="https://get.goXTK.com/xtk_edge.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .header {
+      background: rgba(0, 0, 0, 0.9);
+      padding: 15px 20px;
+      z-index: 1000;
+      position: relative;
+      border-bottom: 2px solid #00aaff;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      flex-shrink: 0;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: #00aaff;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    
+    .controls {
+      display: flex;
+      gap: 20px;
+      margin-top: 15px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+    }
+    
+    .control-group label {
+      font-size: 0.9rem;
+      font-weight: bold;
+      min-width: 60px;
+    }
+    
+    .control-group input[type="range"] {
+      width: 120px;
+    }
+    
+    .control-group span {
+      min-width: 30px;
+      text-align: center;
+      font-weight: bold;
+      color: #00aaff;
+    }
+    
+    .control-group button {
+      background: linear-gradient(135deg, #00aaff, #0088cc);
+      border: none;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 170, 255, 0.3);
+    }
+    
+    .control-group button:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(135deg, #0088cc, #006699);
+      box-shadow: 0 4px 12px rgba(0, 170, 255, 0.5);
+    }
+    
+    #container3d {
+      flex: 1;
+      position: relative;
+      background: #000;
+      width: 100%;
+      height: 100%;
+      min-height: 0; /* Important for flex children */
+    }
+    
+    /* XTK specific styling */
+    #container3d canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block !important;
+    }
+    
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #00aaff;
+      font-size: 1.4rem;
+      text-align: center;
+      z-index: 10;
+    }
+    
+    .spinner {
+      border: 4px solid rgba(0, 170, 255, 0.3);
+      border-top: 4px solid #00aaff;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .error {
+      color: #ff6b6b;
+      font-size: 1.2rem;
+      max-width: 500px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    /* Fullscreen button */
+    .fullscreen-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      border-radius: 5px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 16px;
+      z-index: 1001;
+      transition: background 0.3s;
+    }
+
+    .fullscreen-btn:hover {
+      background: rgba(255, 255, 255, 1);
+    }
+
+    /* Debug info panel */
+    .debug-info {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 12px;
+      z-index: 1000;
+      max-width: 300px;
+    }
+
+    .debug-info div {
+      margin: 2px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="controls" id="controls" style="display: none;">
+      <div class="control-group">
+        <label>X Slice:</label>
+        <input type="range" id="sliceX" min="0" max="100" value="50" />
+        <span id="sliceXValue">50</span>
+      </div>
+      <div class="control-group">
+        <label>Y Slice:</label>
+        <input type="range" id="sliceY" min="0" max="100" value="50" />
+        <span id="sliceYValue">50</span>
+      </div>
+      <div class="control-group">
+        <label>Z Slice:</label>
+        <input type="range" id="sliceZ" min="0" max="100" value="50" />
+        <span id="sliceZValue">50</span>
+      </div>
+      <div class="control-group">
+        <button onclick="resetView()">Reset View</button>
+      </div>
+      <div class="control-group">
+        <button onclick="toggleVolumeMode()">Toggle 3D/Slice</button>
+      </div>
+      <div class="control-group" id="volumeControls" style="display: none;">
+        <label>Opacity:</label>
+        <input type="range" id="volumeOpacity" min="0.1" max="1.0" step="0.1" value="0.2" />
+        <span id="volumeOpacityValue">0.2</span>
+      </div>
+      <div class="control-group" id="thresholdControls" style="display: none;">
+        <label>Threshold:</label>
+        <input type="range" id="volumeThreshold" min="0" max="100" value="10" />
+        <span id="volumeThresholdValue">10%</span>
+      </div>
+      <div class="control-group" id="zoomControls" style="display: none;">
+        <label>Zoom:</label>
+        <input type="range" id="volumeZoom" min="0.2" max="3.0" step="0.1" value="1.0" />
+        <span id="volumeZoomValue">1.0x</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="container3d">
+    <button class="fullscreen-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">⛶</button>
+    <div class="debug-info" id="debugInfo" style="display: none;">
+      <div>Status: <span id="statusText">Initializing...</span></div>
+      <div>XTK Ready: <span id="xtkStatus">Checking...</span></div>
+      <div>File URL: <span id="fileStatus">Not set</span></div>
+    </div>
+  </div>
+
+  <script>
+    let xtkRenderer = null;
+    let xtkVolume = null;
+    let isVolumeMode = false;
+    let loadingTimeout = null;
+
+    function updateStatus(message) {
+      document.getElementById('statusText').textContent = message;
+      console.log('Status:', message);
+    }
+
+    function showDebugInfo() {
+      document.getElementById('debugInfo').style.display = 'block';
+    }
+
+    function hideDebugInfo() {
+      document.getElementById('debugInfo').style.display = 'none';
+    }
+
+    function showError(message) {
+      console.error('Error:', message);
+      updateStatus('Error: ' + message);
+      
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
+    }
+
+    function showControls() {
+      document.getElementById('controls').style.display = 'flex';
+    }
+
+    function hideLoading() {
+      hideDebugInfo();
+      
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
+    }
+
+    function checkFileExists(url) {
+      return fetch(url, { method: 'HEAD' })
+        .then(response => {
+          if (response.ok) {
+            document.getElementById('fileStatus').textContent = 'File found';
+            return true;
+          } else {
+            document.getElementById('fileStatus').textContent = 'File not found (HTTP ' + response.status + ')';
+            return false;
+          }
+        })
+        .catch(error => {
+          document.getElementById('fileStatus').textContent = 'File check failed';
+          return false;
+        });
+    }
+
+    function initXTK() {
+      console.log('Initializing XTK viewer...');
+      updateStatus('Initializing XTK...');
+      showDebugInfo();
+      
+      // Set a loading timeout
+      loadingTimeout = setTimeout(() => {
+        showError('Loading timeout - trying alternative loading method...');
+        // Try alternative loading after timeout
+        setTimeout(tryAlternativeLoading, 1000);
+      }, 15000); // Reduced to 15 seconds, then try alternative
+
+      if (typeof X === 'undefined') {
+        console.error('XTK library not available');
+        document.getElementById('xtkStatus').textContent = 'Not loaded';
+        showError('XTK library failed to load. Please check your internet connection.');
+        return;
+      }
+      
+      document.getElementById('xtkStatus').textContent = 'Loaded';
+      
+      // Check if file exists first
+      const fileUrl = '/input/uploaded.nii';
+      updateStatus('Checking file existence...');
+      
+      checkFileExists(fileUrl).then(fileExists => {
+        if (!fileExists) {
+          showError('NIfTI file not found. Please upload a file first.');
+          return;
+        }
+
+        updateStatus('File found, creating renderer...');
+        
+        try {
+          // Create the 3D renderer
+          xtkRenderer = new X.renderer3D();
+          xtkRenderer.container = 'container3d';
+          xtkRenderer.init();
+          
+          console.log('XTK Renderer initialized');
+          updateStatus('Renderer created, loading volume...');
+
+          // Force renderer to use full container size
+          resizeXTKRenderer();
+
+          // Create a volume object
+          xtkVolume = new X.volume();
+          xtkVolume.file = fileUrl;
+          console.log('Loading volume from:', xtkVolume.file);
+
+          // Set up event handlers with more debugging
+          xtkVolume.onload = function() {
+            console.log('XTK Volume loaded successfully');
+            console.log('Volume object:', xtkVolume);
+            console.log('Dimensions:', xtkVolume.dimensions);
+            console.log('Min/Max values:', xtkVolume.min, xtkVolume.max);
+            updateStatus('Volume loaded successfully');
+            
+            clearTimeout(loadingTimeout);
+            hideLoading();
+            showControls();
+            setupSliceControls();
+            
+            // Set initial display mode (slice view)
+            xtkVolume.volumeRendering = false;
+            xtkVolume.slicesX = true;
+            xtkVolume.slicesY = true;
+            xtkVolume.slicesZ = true;
+            
+            // Center the slices
+            if (xtkVolume.dimensions && xtkVolume.dimensions.length >= 3) {
+              xtkVolume.indexX = Math.floor(xtkVolume.dimensions[0] / 2);
+              xtkVolume.indexY = Math.floor(xtkVolume.dimensions[1] / 2);
+              xtkVolume.indexZ = Math.floor(xtkVolume.dimensions[2] / 2);
+            }
+            
+            // Force resize after loading
+            setTimeout(() => {
+              resizeXTKRenderer();
+            }, 100);
+            
+            console.log('XTK Volume setup complete');
+          };
+
+          xtkVolume.onerror = function(error) {
+            console.error('Error loading NIfTI file with XTK:', error);
+            clearTimeout(loadingTimeout);
+            showError('Failed to load NIfTI file. File may be corrupted or in unsupported format.');
+          };
+
+          // Add progress tracking if available
+          if (xtkVolume.onprogress) {
+            xtkVolume.onprogress = function(event) {
+              console.log('Loading progress:', event);
+              if (event.lengthComputable) {
+                const percentComplete = (event.loaded / event.total) * 100;
+                updateStatus(`Loading... ${Math.round(percentComplete)}%`);
+              }
+            };
+          }
+
+          // Monitor the volume loading state
+          let loadCheckInterval = setInterval(() => {
+            console.log('Checking volume state...');
+            console.log('Volume loaded:', xtkVolume._loaded);
+            console.log('Volume loading:', xtkVolume._loading);
+            
+            if (xtkVolume._loaded) {
+              console.log('Volume is loaded, clearing interval');
+              clearInterval(loadCheckInterval);
+              // Manually trigger onload if it hasn't been called
+              if (document.getElementById('controls').style.display === 'none') {
+                console.log('Manually triggering volume loaded callback');
+                xtkVolume.onload();
+              }
+            }
+          }, 2000);
+
+          // Add the volume to the renderer
+          xtkRenderer.add(xtkVolume);
+          
+          // Force render
+          setTimeout(() => {
+            console.log('Triggering initial render...');
+            xtkRenderer.render();
+            updateStatus('Render triggered, waiting for volume...');
+          }, 500);
+          
+        } catch (error) {
+          console.error('Error initializing XTK:', error);
+          clearTimeout(loadingTimeout);
+          showError('XTK initialization failed: ' + error.message);
+        }
+      });
+    }
+
+    function tryAlternativeLoading() {
+      console.log('Trying alternative loading method...');
+      updateStatus('Trying alternative loading...');
+      
+      if (xtkVolume && xtkRenderer) {
+        // Try to manually check if volume is actually loaded
+        console.log('Volume state check:');
+        console.log('- Volume object exists:', !!xtkVolume);
+        console.log('- Volume loaded flag:', xtkVolume._loaded);
+        console.log('- Volume dimensions:', xtkVolume.dimensions);
+        console.log('- Volume data:', xtkVolume._image);
+        
+        // If volume seems loaded but onload wasn't called
+        if (xtkVolume._loaded || (xtkVolume.dimensions && xtkVolume.dimensions.length > 0)) {
+          console.log('Volume appears loaded, manually triggering success...');
+          updateStatus('Volume detected, setting up viewer...');
+          
+          hideLoading();
+          showControls();
+          setupSliceControls();
+          
+          // Set initial display mode
+          xtkVolume.volumeRendering = false;
+          xtkVolume.slicesX = true;
+          xtkVolume.slicesY = true;
+          xtkVolume.slicesZ = true;
+          
+          // Center the slices
+          if (xtkVolume.dimensions && xtkVolume.dimensions.length >= 3) {
+            xtkVolume.indexX = Math.floor(xtkVolume.dimensions[0] / 2);
+            xtkVolume.indexY = Math.floor(xtkVolume.dimensions[1] / 2);
+            xtkVolume.indexZ = Math.floor(xtkVolume.dimensions[2] / 2);
+          }
+          
+          resizeXTKRenderer();
+          return;
+        }
+        
+        // Try recreating the volume with different approach
+        console.log('Recreating volume with different settings...');
+        try {
+          // Remove old volume
+          xtkRenderer.remove(xtkVolume);
+          
+          // Create new volume with different settings
+          xtkVolume = new X.volume();
+          xtkVolume.file = '/input/uploaded.nii';
+          
+          // Try without some properties that might cause issues
+          xtkVolume.reslicing = false;
+          
+          xtkVolume.onload = function() {
+            console.log('Alternative loading successful!');
+            updateStatus('Alternative loading successful!');
+            hideLoading();
+            showControls();
+            setupSliceControls();
+            
+            xtkVolume.volumeRendering = false;
+            xtkVolume.slicesX = true;
+            xtkVolume.slicesY = true;
+            xtkVolume.slicesZ = true;
+            
+            if (xtkVolume.dimensions && xtkVolume.dimensions.length >= 3) {
+              xtkVolume.indexX = Math.floor(xtkVolume.dimensions[0] / 2);
+              xtkVolume.indexY = Math.floor(xtkVolume.dimensions[1] / 2);
+              xtkVolume.indexZ = Math.floor(xtkVolume.dimensions[2] / 2);
+            }
+            
+            resizeXTKRenderer();
+          };
+          
+          xtkVolume.onerror = function() {
+            showError('Alternative loading also failed. File may be incompatible with XTK.');
+          };
+          
+          xtkRenderer.add(xtkVolume);
+          xtkRenderer.render();
+          
+        } catch (error) {
+          console.error('Alternative loading failed:', error);
+          showError('All loading methods failed. File may be incompatible: ' + error.message);
+        }
+      } else {
+        showError('Cannot retry - renderer or volume not initialized');
+      }
+    }
+
+    function resizeXTKRenderer() {
+      if (xtkRenderer) {
+        const container = document.getElementById('container3d');
+        const rect = container.getBoundingClientRect();
+        
+        console.log('Resizing XTK renderer to:', rect.width, 'x', rect.height);
+        
+        // Force XTK to resize
+        xtkRenderer.resize(rect.width, rect.height);
+        xtkRenderer.render();
+      }
+    }
+
+    function setupSliceControls() {
+      if (!xtkVolume || !xtkVolume.dimensions) {
+        console.error('XTK Volume or dimensions not available');
+        return;
+      }
+
+      const sliceX = document.getElementById('sliceX');
+      const sliceY = document.getElementById('sliceY');
+      const sliceZ = document.getElementById('sliceZ');
+      const sliceXValue = document.getElementById('sliceXValue');
+      const sliceYValue = document.getElementById('sliceYValue');
+      const sliceZValue = document.getElementById('sliceZValue');
+
+      // Set max values based on volume dimensions
+      sliceX.max = xtkVolume.dimensions[0] - 1;
+      sliceY.max = xtkVolume.dimensions[1] - 1;
+      sliceZ.max = xtkVolume.dimensions[2] - 1;
+
+      // Set initial values
+      sliceX.value = xtkVolume.indexX;
+      sliceY.value = xtkVolume.indexY;
+      sliceZ.value = xtkVolume.indexZ;
+      
+      sliceXValue.textContent = xtkVolume.indexX;
+      sliceYValue.textContent = xtkVolume.indexY;
+      sliceZValue.textContent = xtkVolume.indexZ;
+
+      // Add event listeners
+      sliceX.addEventListener('input', function() {
+        xtkVolume.indexX = parseInt(this.value);
+        sliceXValue.textContent = this.value;
+      });
+
+      sliceY.addEventListener('input', function() {
+        xtkVolume.indexY = parseInt(this.value);
+        sliceYValue.textContent = this.value;
+      });
+
+      sliceZ.addEventListener('input', function() {
+        xtkVolume.indexZ = parseInt(this.value);
+        sliceZValue.textContent = this.value;
+      });
+
+      // Setup volume controls
+      setupVolumeControls();
+
+      console.log('Slice controls setup complete');
+    }
+
+    function setupVolumeControls() {
+      const volumeOpacity = document.getElementById('volumeOpacity');
+      const volumeOpacityValue = document.getElementById('volumeOpacityValue');
+      const volumeThreshold = document.getElementById('volumeThreshold');
+      const volumeThresholdValue = document.getElementById('volumeThresholdValue');
+      const volumeZoom = document.getElementById('volumeZoom');
+      const volumeZoomValue = document.getElementById('volumeZoomValue');
+
+      // Add event listeners for volume controls
+      volumeOpacity.addEventListener('input', function() {
+        if (xtkVolume && isVolumeMode) {
+          xtkVolume.opacity = parseFloat(this.value);
+          volumeOpacityValue.textContent = this.value;
+          xtkRenderer.render();
+          console.log('Volume opacity changed to:', this.value);
+        }
+      });
+
+      volumeThreshold.addEventListener('input', function() {
+        if (xtkVolume && isVolumeMode) {
+          const thresholdPercent = parseInt(this.value);
+          const range = xtkVolume.max - xtkVolume.min;
+          const thresholdValue = xtkVolume.min + (range * (thresholdPercent / 100));
+          
+          xtkVolume.lowerThreshold = thresholdValue;
+          volumeThresholdValue.textContent = thresholdPercent + '%';
+          xtkRenderer.render();
+          console.log('Volume threshold changed to:', thresholdPercent + '% (' + thresholdValue + ')');
+        }
+      });
+
+      volumeZoom.addEventListener('input', function() {
+        if (xtkVolume && isVolumeMode && xtkRenderer && xtkRenderer.camera) {
+          const zoomLevel = parseFloat(this.value);
+          const center = xtkVolume.center;
+          
+          if (center && center.length >= 3) {
+            // Adjust camera distance based on zoom level
+            const maxDim = Math.max(xtkVolume.dimensions[0], xtkVolume.dimensions[1], xtkVolume.dimensions[2]);
+            const baseDistance = maxDim * 0.8;
+            const distance = baseDistance / zoomLevel; // Closer camera = more zoom
+            
+            xtkRenderer.camera.position = [center[0] + distance, center[1] + distance, center[2] + distance];
+            xtkRenderer.camera.focal = [center[0], center[1], center[2]];
+            
+            volumeZoomValue.textContent = zoomLevel + 'x';
+            xtkRenderer.render();
+            console.log('Volume zoom changed to:', zoomLevel + 'x');
+          }
+        }
+      });
+
+      console.log('Volume controls setup complete');
+    }
+
+    function showVolumeControls() {
+      document.getElementById('volumeControls').style.display = 'flex';
+      document.getElementById('thresholdControls').style.display = 'flex';
+      document.getElementById('zoomControls').style.display = 'flex';
+    }
+
+    function hideVolumeControls() {
+      document.getElementById('volumeControls').style.display = 'none';
+      document.getElementById('thresholdControls').style.display = 'none';
+      document.getElementById('zoomControls').style.display = 'none';
+    }
+
+    function resetView() {
+      if (xtkVolume && xtkVolume.dimensions) {
+        if (isVolumeMode) {
+          // Reset 3D volume view
+          console.log('Resetting 3D volume view...');
+          
+          // Reset zoom to 1.0
+          document.getElementById('volumeZoom').value = 1.0;
+          document.getElementById('volumeZoomValue').textContent = '1.0x';
+          
+          // Reset camera position
+          if (xtkRenderer && xtkRenderer.camera) {
+            const center = xtkVolume.center;
+            if (center && center.length >= 3) {
+              const maxDim = Math.max(xtkVolume.dimensions[0], xtkVolume.dimensions[1], xtkVolume.dimensions[2]);
+              const distance = maxDim * 0.8;
+              xtkRenderer.camera.position = [center[0] + distance, center[1] + distance, center[2] + distance];
+              xtkRenderer.camera.focal = [center[0], center[1], center[2]];
+              xtkRenderer.camera.up = [0, 0, 1];
+              
+              console.log('3D camera reset to default position');
+            }
+          }
+          
+          updateStatus('3D view reset');
+        } else {
+          // Reset slice view to center slices
+          xtkVolume.indexX = Math.floor(xtkVolume.dimensions[0] / 2);
+          xtkVolume.indexY = Math.floor(xtkVolume.dimensions[1] / 2);
+          xtkVolume.indexZ = Math.floor(xtkVolume.dimensions[2] / 2);
+          
+          // Update UI
+          document.getElementById('sliceX').value = xtkVolume.indexX;
+          document.getElementById('sliceY').value = xtkVolume.indexY;
+          document.getElementById('sliceZ').value = xtkVolume.indexZ;
+          
+          document.getElementById('sliceXValue').textContent = xtkVolume.indexX;
+          document.getElementById('sliceYValue').textContent = xtkVolume.indexY;
+          document.getElementById('sliceZValue').textContent = xtkVolume.indexZ;
+          
+          // Reset camera for slice viewing
+          if (xtkRenderer && xtkRenderer.camera) {
+            xtkRenderer.camera.position = [0, 0, 200];
+          }
+          
+          console.log('Slice view reset to center');
+          updateStatus('Slice view reset to center');
+        }
+        
+        // Force render after reset
+        setTimeout(() => {
+          xtkRenderer.render();
+        }, 100);
+      }
+    }
+
+    function positionCameraFor3D() {
+      if (xtkRenderer && xtkRenderer.camera && xtkVolume && xtkVolume.center) {
+        const center = xtkVolume.center;
+        if (center && center.length >= 3) {
+          // Position camera closer for larger 3D view
+          const maxDim = Math.max(xtkVolume.dimensions[0], xtkVolume.dimensions[1], xtkVolume.dimensions[2]);
+          const distance = maxDim * 0.8; // Closer for better view
+          xtkRenderer.camera.position = [center[0] + distance, center[1] + distance, center[2] + distance];
+          xtkRenderer.camera.up = [0, 0, 1];
+          xtkRenderer.camera.focal = [center[0], center[1], center[2]];
+          
+          console.log('Camera positioned for 3D view at:', xtkRenderer.camera.position);
+          console.log('Camera looking at:', xtkRenderer.camera.focal);
+          console.log('Volume center:', center);
+          console.log('Volume dimensions:', xtkVolume.dimensions);
+        }
+      }
+    }
+
+    function toggleVolumeMode() {
+      if (!xtkVolume) return;
+      
+      isVolumeMode = !isVolumeMode;
+      
+      if (isVolumeMode) {
+        console.log('Switching to 3D volume mode');
+        // Enable volume rendering
+        xtkVolume.volumeRendering = true;
+        xtkVolume.slicesX = false;
+        xtkVolume.slicesY = false;
+        xtkVolume.slicesZ = false;
+        
+        // Set default volume properties
+        xtkVolume.opacity = 0.2;
+        document.getElementById('volumeOpacity').value = 0.2;
+        document.getElementById('volumeOpacityValue').textContent = '0.2';
+        
+        // Set default threshold
+        const thresholdValue = 10;
+        const normalizedThreshold = xtkVolume.min + (thresholdValue / 100) * (xtkVolume.max - xtkVolume.min);
+        xtkVolume.lowerThreshold = normalizedThreshold;
+        document.getElementById('volumeThreshold').value = thresholdValue;
+        document.getElementById('volumeThresholdValue').textContent = thresholdValue + '%';
+        
+        // Show 3D controls
+        document.getElementById('volumeControls').style.display = 'flex';
+        document.getElementById('thresholdControls').style.display = 'flex';
+        document.getElementById('zoomControls').style.display = 'flex';
+        
+        // Position camera for 3D view
+        positionCameraFor3D();
+        
+      } else {
+        console.log('Switching to slice mode');
+        // Disable volume rendering
+        xtkVolume.volumeRendering = false;
+        xtkVolume.slicesX = true;
+        xtkVolume.slicesY = true;
+        xtkVolume.slicesZ = true;
+        
+        // Hide 3D controls
+        document.getElementById('volumeControls').style.display = 'none';
+        document.getElementById('thresholdControls').style.display = 'none';
+        document.getElementById('zoomControls').style.display = 'none';
+        
+        // Reset camera for slice view
+        if (xtkRenderer && xtkRenderer.camera) {
+          xtkRenderer.camera.position = [0, 0, 200];
+          xtkRenderer.camera.up = [0, 1, 0];
+        }
+      }
+      
+      xtkRenderer.render();
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+          console.log('Entered fullscreen');
+          // Resize renderer in fullscreen
+          setTimeout(() => {
+            resizeXTKRenderer();
+          }, 100);
+        });
+      } else {
+        document.exitFullscreen().then(() => {
+          console.log('Exited fullscreen');
+          // Resize renderer when exiting fullscreen
+          setTimeout(() => {
+            resizeXTKRenderer();
+          }, 100);
+        });
+      }
+    }
+
+    // Initialize when page loads
+    window.addEventListener('load', function() {
+      console.log('Page loaded, initializing XTK viewer...');
+      initXTK();
+    });
+
+    // Handle errors
+    window.addEventListener('error', function(e) {
+      console.error('JavaScript error:', e.error);
+      showError('JavaScript error: ' + e.message);
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', function() {
+      resizeXTKRenderer();
+    });
+
+    // Handle fullscreen changes
+    document.addEventListener('fullscreenchange', function() {
+      setTimeout(() => {
+        resizeXTKRenderer();
+      }, 100);
+    });
+  </script>
+</body>
+</html> 
