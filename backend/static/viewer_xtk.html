@@ -784,6 +784,11 @@
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().then(() => {
           console.log('Entered fullscreen');
+          // Hide controls when entering fullscreen
+          const header = document.querySelector('.header');
+          if (header) {
+            header.style.display = 'none';
+          }
           // Resize renderer in fullscreen
           setTimeout(() => {
             resizeXTKRenderer();
@@ -792,6 +797,11 @@
       } else {
         document.exitFullscreen().then(() => {
           console.log('Exited fullscreen');
+          // Show controls when exiting fullscreen
+          const header = document.querySelector('.header');
+          if (header) {
+            header.style.display = 'block';
+          }
           // Resize renderer when exiting fullscreen
           setTimeout(() => {
             resizeXTKRenderer();
