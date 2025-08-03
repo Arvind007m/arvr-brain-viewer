@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 import shutil
 import subprocess
@@ -16,15 +16,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="backend/static"), name="static")
+# Mount backend static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/output", StaticFiles(directory="output"), name="output")
+app.mount("/input", StaticFiles(directory="input"), name="input")
 
-app.mount("/output", StaticFiles(directory="backend/output"), name="output")
-
-app.mount("/input", StaticFiles(directory="backend/input"), name="input")
+# Mount frontend files (for Railway deployment)
+app.mount("/frontend", StaticFiles(directory="../frontend"), name="frontend")
 
 @app.get("/")
-def read_root():
-    return RedirectResponse(url="/static/index.html")
+def get_index():
+    """Serve the frontend index.html for Railway deployment"""
+    file_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html")
+    return FileResponse(file_path, media_type="text/html")
 
 @app.get("/viewer")
 def get_viewer():
@@ -44,11 +48,11 @@ def get_viewer_xtk():
 @app.post("/upload/")
 async def upload_mri(file: UploadFile = File(...)):
     try:
-        input_path = os.path.join("backend", "input", "uploaded.nii")
+        input_path = os.path.join("input", "uploaded.nii")
         with open(input_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        result = subprocess.run(["python", "backend/run_pipeline.py"], capture_output=True, text=True, cwd="backend")
+        result = subprocess.run(["python", "run_pipeline.py"], capture_output=True, text=True)
 
         if result.returncode != 0:
             return JSONResponse(status_code=500, content={"error": result.stderr})

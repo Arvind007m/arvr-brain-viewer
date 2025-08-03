@@ -1,3 +1,13 @@
+// Dynamic API base URL detection
+const getApiBaseUrl = () => {
+  // If we're on localhost, use the local backend
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:5000';
+  }
+  // Otherwise, use the same origin (for Railway deployment)
+  return window.location.origin;
+};
+
 document.getElementById("mriUpload").addEventListener("change", async function (event) {
   event.preventDefault();
 
@@ -13,7 +23,7 @@ document.getElementById("mriUpload").addEventListener("change", async function (
   showLoadingOverlay(); 
 
   try {
-    const response = await fetch("http://localhost:5000/upload", {
+    const response = await fetch(`${getApiBaseUrl()}/upload`, {
       method: "POST",
       body: formData
     });
@@ -30,14 +40,14 @@ document.getElementById("mriUpload").addEventListener("change", async function (
 
 function showViewer(mode) {
   if (mode === 'vr') {
-    window.open('http://localhost:5000/viewer_vr', '_blank'); 
+    window.open(`${getApiBaseUrl()}/viewer_vr`, '_blank'); 
     return;
   }
 
   const viewerContainer = document.getElementById("unityViewer");
   const iframe = document.getElementById("viewerFrame");
 
-  iframe.src = `http://localhost:5000/viewer?mode=${mode}`;
+  iframe.src = `${getApiBaseUrl()}/viewer?mode=${mode}`;
   iframe.style.display = "block";
 
   const oldCanvas = document.getElementById("threeCanvas");
@@ -47,7 +57,7 @@ function showViewer(mode) {
 }
 
 function showXTKViewer() {
-  window.open('http://localhost:5000/viewer_xtk', '_blank');
+  window.open(`${getApiBaseUrl()}/viewer_xtk`, '_blank');
 }
 
 function showLoadingOverlay() {

@@ -27,7 +27,7 @@
   <body>
     <div id="enterVRNotice">Tap the VR icon in the bottom right to enter VR mode</div>
 
-    <a-scene background="color: #2c3e50">
+    <a-scene background="color: #2c3e50" vr-mode-ui="enabled: true">
       <a-assets>
         <a-asset-item id="brainModel" src="/output/brain_with_tumor.glb"></a-asset-item>
       </a-assets>
@@ -35,21 +35,75 @@
       <!-- Simple gradient sky background -->
       <a-sky material="shader: gradient; topColor: #87CEEB; bottomColor: #2c3e50"></a-sky>
 
-      <!-- Brain Model - Stationary at eye level -->
-      <a-gltf-model 
-        src="#brainModel"
-        scale="1 1 1" 
-        position="0 1.6 -3"
-        rotation="0 0 0">
-      </a-gltf-model>
+      <!-- Brain Container Entity for better positioning control -->
+      <a-entity id="brainContainer" position="0 0 -3">
+        <a-gltf-model 
+          id="brain"
+          src="#brainModel"
+          scale="0.8 0.8 0.8" 
+          position="0 0 0"
+          rotation="0 0 0"
+          animation__float="property: rotation; to: 0 360 0; loop: true; dur: 20000"
+          gltf-model-positioning>
+        </a-gltf-model>
+      </a-entity>
 
       <!-- Clean lighting setup -->
-      <a-entity light="type: ambient; intensity: 0.6"></a-entity>
-      <a-entity light="type: directional; intensity: 1.0" position="2 4 5"></a-entity>
-      <a-entity light="type: hemisphere; color: #ffffff; groundColor: #888888; intensity: 0.4"></a-entity>
+      <a-entity light="type: ambient; intensity: 0.8"></a-entity>
+      <a-entity light="type: directional; intensity: 1.2" position="1 2 1"></a-entity>
+      <a-entity light="type: hemisphere; color: #ffffff; groundColor: #888888; intensity: 0.6"></a-entity>
 
-      <!-- Camera -->
-      <a-entity camera look-controls wasd-controls position="0 1.6 0"></a-entity>
+      <!-- VR Camera Setup -->
+      <a-entity id="cameraRig" position="0 1.6 0">
+        <a-entity camera look-controls wasd-controls></a-entity>
+      </a-entity>
     </a-scene>
+
+    <script>
+      // Custom component to ensure proper brain positioning in VR
+      AFRAME.registerComponent('gltf-model-positioning', {
+        init: function() {
+          this.el.addEventListener('model-loaded', () => {
+            // Center the model and ensure it's visible in VR
+            const model = this.el.getObject3D('mesh');
+            if (model) {
+              // Calculate bounding box to center the model
+              const box = new THREE.Box3().setFromObject(model);
+              const center = box.getCenter(new THREE.Vector3());
+              
+              // Offset the model to center it properly
+              model.position.set(-center.x, -center.y, -center.z);
+              
+              // Ensure model is at appropriate scale for VR viewing
+              const size = box.getSize(new THREE.Vector3());
+              const maxDimension = Math.max(size.x, size.y, size.z);
+              if (maxDimension > 2) {
+                const scale = 1.5 / maxDimension;
+                this.el.setAttribute('scale', `${scale} ${scale} ${scale}`);
+              }
+            }
+          });
+        }
+      });
+
+      // VR session management
+      document.addEventListener('DOMContentLoaded', function() {
+        const scene = document.querySelector('a-scene');
+        
+        scene.addEventListener('enter-vr', function() {
+          console.log('Entered VR mode');
+          // Ensure brain is properly positioned when entering VR
+          const brainContainer = document.querySelector('#brainContainer');
+          brainContainer.setAttribute('position', '0 1.6 -2.5');
+        });
+        
+        scene.addEventListener('exit-vr', function() {
+          console.log('Exited VR mode');
+          // Reset position for desktop viewing
+          const brainContainer = document.querySelector('#brainContainer');
+          brainContainer.setAttribute('position', '0 0 -3');
+        });
+      });
+    </script>
   </body>
 </html>
